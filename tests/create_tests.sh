@@ -5,6 +5,8 @@ SHARPS_OR_FLATS=$1
 declare -a NOTES_WITH_SHARPS
 declare -a NOTES_WITH_FLATS
 
+PREFIX=piano_samples123
+
 function Populate_Arrays(){
     NOTES_WITH_SHARPS=(A C D F G)
     NOTES_WITH_FLATS=(A B D E G)
@@ -41,14 +43,14 @@ function Create_Test_Set(){
         for note in A B C D E F G
         do
 
-            touch ./test_input/piano${note}${octave}.wav
+            touch ./test_input/${PREFIX}_${note}-${octave}.wav
             if [[ $SHARPS_OR_FLATS = 'sharps' ]]
             then
                 for altered_note in ${NOTES_WITH_SHARPS[@]}
                 do
                     if [[ $altered_note = $note ]]
                     then
-                        touch ./test_input/piano${note}\#${octave}.wav
+                        touch ./test_input/${PREFIX}_${note}'#'-${octave}.wav
                     fi
                 done
             fi
@@ -59,7 +61,7 @@ function Create_Test_Set(){
                 do
                     if [[ $altered_note = $note ]]
                     then
-                        touch ./test_input/piano${note}b${octave}.wav
+                        touch ./test_input/${PREFIX}_${note}-b${octave}.wav
                     fi
                 done
             fi
