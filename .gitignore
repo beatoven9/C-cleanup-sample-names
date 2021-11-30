@@ -1,4 +1,2 @@
-./test_input
-./test_output
-./test_input/**
-./test_output/**
+./test_input/
+./test_output/
