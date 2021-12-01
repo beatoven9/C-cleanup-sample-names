@@ -30,9 +30,9 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    if(newFileNames(filesList, newFilesList)){
+    if(newFileNames(filesList, newFilesList) != NULL){
         printf("Successfully made new names for files!\n");
-        //printStringsInArray(newFilesList);
+        printStringsInArray(newFilesList);
 
     } else {
         printf("Unable to make new file names\n");
@@ -75,22 +75,50 @@ char* newFileNames(char oldFilesList[MAXDIRCAPACITY][MAXNAMLEN], char newFilesLi
     size_t nmatch = 1;
     regmatch_t matchInfo[1];
 
-    //This function defaults to using Basic Regular Expressions and I need Extended with this regex
-    errorFlag = regcomp(&regObject, "[ABCDEFG][#b]?[-_][0-9]", REG_EXTENDED);
+    //This function regcomp() defaults to using Basic Regular Expressions and I need Extended with this regex
+    errorFlag = regcomp(&regObject, "[ABCDEFG][#b]?[-_]?[0-9]", REG_EXTENDED);
     if (errorFlag){
         fprintf(stderr, "Problem compiling the regular expression!\n");
         exit(1);
     }
 
-
+    // I previously marked the last element of the oldFilesList to be "\0" so that I can check for it 
+    // and won't check an index past the last one here.
     while(strcmp(oldFilesList[x], "\0") != 0){
-        const char *oldFile = oldFilesList[x];
+        char *oldFile = oldFilesList[x];
+
+        strtok(oldFile, ".");
+        char *dotDelimiter = ".";
+        char *fileNameExt = strtok(NULL, dotDelimiter);
+        printf("This: %s\n", fileNameExt);
+
+        char newFileName[MAXNAMLEN];
 
         errorFlag = regexec(&regObject, oldFile, nmatch, matchInfo, REG_NOTEOL);
         if (!errorFlag) {
-            printf("match found! %s\n", &oldFilesList[x][matchInfo[0].rm_so]);
-            printf("At index: %i\n", matchInfo[0].rm_so);
-            printf("Ending index: %i\n", matchInfo[0].rm_eo);
+            printf("match found! \n");
+
+            strcpy(newFileName, &oldFilesList[x][matchInfo[0].rm_so]);
+
+            int endOfString = matchInfo[0].rm_eo - matchInfo[0].rm_so;
+            newFileName[endOfString] = '\0';
+
+            //Use strtok to eliminate - and _ from the note names
+            char *delimiters = "-_";
+            char *tokenA = strtok(newFileName, delimiters);
+            char *tokenB;
+            if ((tokenB = strtok(NULL, delimiters))){
+                strcpy(newFileName, tokenA);
+                strcat(newFileName, tokenB);
+            }
+            char *dot = (char*) malloc(MAXNAMLEN);
+            strcpy(dot, ".");
+
+            if (strcat(dot, fileNameExt) == NULL){
+                printf("hey, Something went wrong!");
+                return NULL;
+            }
+            strcat(newFileName, dot);
         } else if (errorFlag==REG_NOMATCH) {
             printf("No matches found\n");
         } else {
@@ -98,7 +126,12 @@ char* newFileNames(char oldFilesList[MAXDIRCAPACITY][MAXNAMLEN], char newFilesLi
         }
         
         char newPrefix[MAXNAMLEN] = "AwesomeSample_";
-        strcat(newPrefix, oldFile);
+        if (strcat(newPrefix, newFileName) == NULL) {
+            printf("Something went wrong!\n");
+            return NULL;
+
+        }
+        printf("This is the string: %s\n", newPrefix);
         strcpy(newFilesList[x], newPrefix);
         x++;
 
@@ -112,5 +145,4 @@ void printStringsInArray(char myArray[MAXDIRCAPACITY][MAXNAMLEN]){
         printf("%s\n", myArray[x]);
         x++;
     }
-
 }
