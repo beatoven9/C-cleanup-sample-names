@@ -1,52 +1,84 @@
+// You need to separate this into multiple files
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <dirent.h>
 #include <regex.h>
+#include <unistd.h>
 
 #define MAXPATHLEN 255
-#define MAXDIRCAPACITY 511
-#define MAXFILENAME 127
+#define MAXDIRCAPACITY 255
+#define MAXFILENAME 255
 
-char* getFilesFromDir(char *dirToOpen, char filesList[MAXDIRCAPACITY][MAXFILENAME]);
-char* newFileNames(char oldFilesList[MAXDIRCAPACITY][MAXFILENAME], char newFilesList[MAXDIRCAPACITY][MAXFILENAME]);
-void printStringsInArray(char myArray[MAXDIRCAPACITY][MAXFILENAME]);
+struct srcDestDir {
+    char src[MAXPATHLEN];
+    char dest[MAXPATHLEN];
+};
+
+struct srcDestFile {
+    char src[MAXPATHLEN];
+    char dest[MAXPATHLEN];
+};
+
+char* GetFilesFromDir(char *dirToOpen, char filesList[MAXDIRCAPACITY][MAXFILENAME]);
+char* NewFileNames(char oldFilesList[MAXDIRCAPACITY][MAXFILENAME], char newFilesList[MAXDIRCAPACITY][MAXFILENAME]);
+void PrintStringsInArray(char myArray[MAXDIRCAPACITY][MAXFILENAME]);
+void CopyFileTo(char *src, char *dest);
+struct srcDestFile* GetAbsPaths(struct srcDestFile *sd);
+
+void PrintSrcDestDir(struct srcDestDir sd);
+void PrintSrcDestFile(struct srcDestFile sd);
+
 
 int main(int argc, char *argv[]) {
-    if ( argc == 2){
-        printf("The argument supplied is %s\n", argv[1]);
-    } else if( argc > 2 ){
+    if ( argc == 3){
+        printf("\tSource path is: %s\n\tDestination path is: %s\n", argv[1], argv[2]);
+
+       // struct srcDestFile sd;
+       // strncpy(sd.src, argv[1], MAXPATHLEN);
+       // strncpy(sd.dest, argv[2], MAXPATHLEN);
+
+       // GetAbsPaths(&sd);
+       // PrintSrcDestFile(sd);
+
+    } else if( argc > 3 ){
         fprintf(stderr, "Too many arguments supplied!\n");
     } else {
-        fprintf(stderr, "One Argument Expected! sharps | flats\n");
+        fprintf(stderr, "Two Arguments Expected!\n      ./a.out sourceFolder targetFolder\n");
         exit(1);
     }
 
     char filesList[MAXDIRCAPACITY][MAXFILENAME];
     char newFilesList[MAXDIRCAPACITY][MAXFILENAME];
 
-    if(getFilesFromDir(argv[1], filesList)){
-        printf("Directory opened successfully\n");
-    } else {
+    if(!GetFilesFromDir(argv[1], filesList)){
         fprintf(stderr, "Issue opening up directory!\n");
         return 1;
     }
 
-    if(newFileNames(filesList, newFilesList) != NULL){
-        printf("Successfully made new names for files!\n");
-        printStringsInArray(newFilesList);
-
+    if(NewFileNames(filesList, newFilesList) != NULL){
+        //PrintStringsInArray(newFilesList);
     } else {
         fprintf(stderr, "Unable to make new filenames!\n");
     }
 
-    //printStringsInArray(newFilesList);
+    PrintStringsInArray(newFilesList);
 }
 
-char* getFilesFromDir(char *dirToOpen, char filesList[MAXDIRCAPACITY][MAXFILENAME]){
+void PrintSrcDestFile(struct srcDestFile sd){
+    printf("\tSource path is: %s\n\tDestination path is: %s\n", sd.src, sd.dest);
+    return;
+
+}
+
+void PrintSrcDestDir(struct srcDestDir sd){
+    printf("\tSource path is: %s\n\tDestination path is: %s\n", sd.src, sd.dest);
+    return;
+}
+
+char* GetFilesFromDir(char *dirToOpen, char filesList[MAXDIRCAPACITY][MAXFILENAME]){
     char dirPath[MAXPATHLEN] = "./";
     strcat(dirPath, dirToOpen);
-    printf("%s\n", dirPath);
 
     DIR *directory = opendir(dirPath);
     if (directory == NULL ){
@@ -60,16 +92,16 @@ char* getFilesFromDir(char *dirToOpen, char filesList[MAXDIRCAPACITY][MAXFILENAM
     int fileListHead = 0;
     while ((dp = readdir(directory)) != NULL )
     {
-        strcpy(filesList[fileListHead], dp->d_name);
+        strncpy(filesList[fileListHead], dp->d_name, MAXFILENAME);
         fileListHead++;
     }
-    strcpy(filesList[fileListHead], "\0");
+    strncpy(filesList[fileListHead], "EndOfArray", MAXFILENAME);
     closedir(directory);
 
     return *filesList;
 }
 
-char* newFileNames(char oldFilesList[MAXDIRCAPACITY][MAXFILENAME], char newFilesList[MAXDIRCAPACITY][MAXFILENAME]){
+char* NewFileNames(char oldFilesList[MAXDIRCAPACITY][MAXFILENAME], char newFilesList[MAXDIRCAPACITY][MAXFILENAME]){
     int x = 0;
     regex_t regObject;
     int errorFlag;
@@ -86,8 +118,14 @@ char* newFileNames(char oldFilesList[MAXDIRCAPACITY][MAXFILENAME], char newFiles
 
     // I previously marked the last element of the oldFilesList to be "\0" so that I can check for it 
     // and won't check an index past the last one here.
-    while(strcmp(oldFilesList[x], "\0") != 0){
+    while(strcmp(oldFilesList[x], "EndOfArray") != 0){
         char *oldFile = oldFilesList[x];
+        //Don't check . or ..
+        if((strcmp(oldFilesList[x], ".") == 0) || (strcmp(oldFilesList[x], "..")) == 0){
+            x++;
+            printf("skipping one\n");
+            continue;
+        }
 
         strtok(oldFile, ".");
         char *dotDelimiter = ".";
@@ -97,8 +135,6 @@ char* newFileNames(char oldFilesList[MAXDIRCAPACITY][MAXFILENAME], char newFiles
 
         errorFlag = regexec(&regObject, oldFile, nmatch, matchInfo, REG_NOTEOL);
         if (!errorFlag) {
-            printf("match found! \n");
-
             strncpy(newFileName, &oldFilesList[x][matchInfo[0].rm_so], MAXFILENAME);
 
             int endOfString = matchInfo[0].rm_eo - matchInfo[0].rm_so;
@@ -108,34 +144,91 @@ char* newFileNames(char oldFilesList[MAXDIRCAPACITY][MAXFILENAME], char newFiles
             char *delimiters = "-_";
             char *tokenA = strtok(newFileName, delimiters);
             char *tokenB;
-            if ((tokenB = strtok(NULL, delimiters))){
-                strncpy(newFileName, tokenA, MAXFILENAME);
+            if ((tokenB = strtok(NULL, delimiters)) != NULL){
+                //printf("Found another token\n");
+                memcpy(newFileName, tokenA, MAXFILENAME);
                 strncat(newFileName, tokenB, MAXFILENAME);
             }
-            char *dot = (char*) malloc(MAXFILENAME);
-            strncpy(dot, ".", MAXFILENAME);
 
+            char dot[MAXFILENAME] = ".";
+            
             strncat(dot, fileNameExt, MAXFILENAME);
             strncat(newFileName, dot, MAXFILENAME);
         } else if (errorFlag==REG_NOMATCH) {
-            printf("No matches found\n");
+            fprintf(stderr, "No matches found for file name: %s\n", oldFile);
         } else {
-            printf("unknown error\n");
+            fprintf(stderr, "unknown error\n");
         }
         
         char newPrefix[MAXFILENAME] = "AwesomeSample_";
         strncat(newPrefix, newFileName, MAXFILENAME);
         strncpy(newFilesList[x], newPrefix, MAXFILENAME);
         x++;
-
     }
+    x++;
+    strncpy(newFilesList[x], "EndOfArray", MAXFILENAME);
     return *newFilesList;
 }
 
-void printStringsInArray(char myArray[MAXDIRCAPACITY][MAXFILENAME]){ 
+
+struct srcDestFile* GetAbsPaths(struct srcDestFile *sd){
+    char path[MAXPATHLEN];
+    char tmpSrc[MAXPATHLEN] = "/"; 
+    char tmpDest[MAXPATHLEN] = "/";
+
+    strncat(tmpSrc, sd->src, MAXPATHLEN);
+    strncat(tmpDest, sd->dest, MAXPATHLEN);
+
+    getcwd(path, MAXPATHLEN);
+
+    memcpy(sd->src, path, MAXPATHLEN);
+    memcpy(sd->dest, path, MAXPATHLEN);
+
+    strncat(sd->src, tmpSrc, MAXPATHLEN);
+    strncat(sd->dest, tmpDest, MAXPATHLEN);
+    
+    return sd;
+}
+
+void PrintStringsInArray(char myArray[MAXDIRCAPACITY][MAXFILENAME]){ 
     int x = 0;
-    while(strcmp(myArray[x], "\0") != 0){
-        printf("%s\n", myArray[x]);
+    //for(int i = 0; i < 120; i++){
+    //    printf("%i\t%s\n", i, myArray[i]);
+    //}
+    //while(strcmp(myArray[x], "EndOfArray") != 0){
+    //    printf("%i\t%s\n", x, myArray[x]);
+    //    x++;
+    //}
+    while(strcmp(myArray[x], "EndOfArray") != 0){
+        printf("%i\t%s\n", x, myArray[x]);
         x++;
     }
+}
+
+void CopyFileTo(char *src, char *dest){
+    FILE *source, *destination;
+    char ch;
+
+    source = fopen(src, "r");
+    if (source == NULL){
+        fprintf(stderr, "Error opening source file for reading\n");
+        exit(EXIT_FAILURE);
+    }
+
+    destination = fopen(dest, "w");
+    if (destination == NULL){
+        fclose(source);
+        fprintf(stderr, "Error opening destination file for writing\n");
+        exit(EXIT_FAILURE);
+    }
+    
+    while (( ch = fgetc(source)) != EOF){
+        fputc(ch, destination);
+    }
+
+    printf("Successfully copied %s to %s\n", src, dest);
+    fclose(source);
+    fclose(destination);
+
+    return;
 }
