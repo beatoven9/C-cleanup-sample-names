@@ -5,28 +5,30 @@
 #include <regex.h>
 
 #define MAXPATHLEN 255
-#define MAXDIRCAPACITY 500
+#define MAXDIRCAPACITY 511
+#define MAXFILENAME 127
 
-char* getFilesFromDir(char *dirToOpen, char filesList[MAXDIRCAPACITY][MAXNAMLEN]);
-char* newFileNames(char oldFilesList[MAXDIRCAPACITY][MAXNAMLEN], char newFilesList[MAXDIRCAPACITY][MAXNAMLEN]);
-void printStringsInArray(char myArray[MAXDIRCAPACITY][MAXNAMLEN]);
+char* getFilesFromDir(char *dirToOpen, char filesList[MAXDIRCAPACITY][MAXFILENAME]);
+char* newFileNames(char oldFilesList[MAXDIRCAPACITY][MAXFILENAME], char newFilesList[MAXDIRCAPACITY][MAXFILENAME]);
+void printStringsInArray(char myArray[MAXDIRCAPACITY][MAXFILENAME]);
 
 int main(int argc, char *argv[]) {
     if ( argc == 2){
         printf("The argument supplied is %s\n", argv[1]);
     } else if( argc > 2 ){
-        printf("Too many args supplied\n");
+        fprintf(stderr, "Too many arguments supplied!\n");
     } else {
-        printf("One argument expected\n");
+        fprintf(stderr, "One Argument Expected! sharps | flats\n");
+        exit(1);
     }
 
-    char filesList[MAXDIRCAPACITY][MAXNAMLEN];
-    char newFilesList[MAXDIRCAPACITY][MAXNAMLEN];
+    char filesList[MAXDIRCAPACITY][MAXFILENAME];
+    char newFilesList[MAXDIRCAPACITY][MAXFILENAME];
 
     if(getFilesFromDir(argv[1], filesList)){
         printf("Directory opened successfully\n");
     } else {
-        printf("Issue opening up directory\n");
+        fprintf(stderr, "Issue opening up directory!\n");
         return 1;
     }
 
@@ -35,20 +37,20 @@ int main(int argc, char *argv[]) {
         printStringsInArray(newFilesList);
 
     } else {
-        printf("Unable to make new file names\n");
+        fprintf(stderr, "Unable to make new filenames!\n");
     }
 
     //printStringsInArray(newFilesList);
 }
 
-char* getFilesFromDir(char *dirToOpen, char filesList[MAXDIRCAPACITY][MAXNAMLEN]){
+char* getFilesFromDir(char *dirToOpen, char filesList[MAXDIRCAPACITY][MAXFILENAME]){
     char dirPath[MAXPATHLEN] = "./";
     strcat(dirPath, dirToOpen);
     printf("%s\n", dirPath);
 
     DIR *directory = opendir(dirPath);
     if (directory == NULL ){
-        printf("Could not open directory");
+        fprintf(stderr, "Could not open directory!\n");
         return NULL;
     }
 
@@ -67,7 +69,7 @@ char* getFilesFromDir(char *dirToOpen, char filesList[MAXDIRCAPACITY][MAXNAMLEN]
     return *filesList;
 }
 
-char* newFileNames(char oldFilesList[MAXDIRCAPACITY][MAXNAMLEN], char newFilesList[MAXDIRCAPACITY][MAXNAMLEN]){
+char* newFileNames(char oldFilesList[MAXDIRCAPACITY][MAXFILENAME], char newFilesList[MAXDIRCAPACITY][MAXFILENAME]){
     int x = 0;
     regex_t regObject;
     int errorFlag;
@@ -90,15 +92,14 @@ char* newFileNames(char oldFilesList[MAXDIRCAPACITY][MAXNAMLEN], char newFilesLi
         strtok(oldFile, ".");
         char *dotDelimiter = ".";
         char *fileNameExt = strtok(NULL, dotDelimiter);
-        printf("This: %s\n", fileNameExt);
 
-        char newFileName[MAXNAMLEN];
+        char *newFileName = (char*) malloc(MAXFILENAME);
 
         errorFlag = regexec(&regObject, oldFile, nmatch, matchInfo, REG_NOTEOL);
         if (!errorFlag) {
             printf("match found! \n");
 
-            strcpy(newFileName, &oldFilesList[x][matchInfo[0].rm_so]);
+            strncpy(newFileName, &oldFilesList[x][matchInfo[0].rm_so], MAXFILENAME);
 
             int endOfString = matchInfo[0].rm_eo - matchInfo[0].rm_so;
             newFileName[endOfString] = '\0';
@@ -108,38 +109,30 @@ char* newFileNames(char oldFilesList[MAXDIRCAPACITY][MAXNAMLEN], char newFilesLi
             char *tokenA = strtok(newFileName, delimiters);
             char *tokenB;
             if ((tokenB = strtok(NULL, delimiters))){
-                strcpy(newFileName, tokenA);
-                strcat(newFileName, tokenB);
+                strncpy(newFileName, tokenA, MAXFILENAME);
+                strncat(newFileName, tokenB, MAXFILENAME);
             }
-            char *dot = (char*) malloc(MAXNAMLEN);
-            strcpy(dot, ".");
+            char *dot = (char*) malloc(MAXFILENAME);
+            strncpy(dot, ".", MAXFILENAME);
 
-            if (strcat(dot, fileNameExt) == NULL){
-                printf("hey, Something went wrong!");
-                return NULL;
-            }
-            strcat(newFileName, dot);
+            strncat(dot, fileNameExt, MAXFILENAME);
+            strncat(newFileName, dot, MAXFILENAME);
         } else if (errorFlag==REG_NOMATCH) {
             printf("No matches found\n");
         } else {
             printf("unknown error\n");
         }
         
-        char newPrefix[MAXNAMLEN] = "AwesomeSample_";
-        if (strcat(newPrefix, newFileName) == NULL) {
-            printf("Something went wrong!\n");
-            return NULL;
-
-        }
-        printf("This is the string: %s\n", newPrefix);
-        strcpy(newFilesList[x], newPrefix);
+        char newPrefix[MAXFILENAME] = "AwesomeSample_";
+        strncat(newPrefix, newFileName, MAXFILENAME);
+        strncpy(newFilesList[x], newPrefix, MAXFILENAME);
         x++;
 
     }
     return *newFilesList;
 }
 
-void printStringsInArray(char myArray[MAXDIRCAPACITY][MAXNAMLEN]){ 
+void printStringsInArray(char myArray[MAXDIRCAPACITY][MAXFILENAME]){ 
     int x = 0;
     while(strcmp(myArray[x], "\0") != 0){
         printf("%s\n", myArray[x]);
