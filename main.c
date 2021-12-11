@@ -34,17 +34,21 @@ int main(int argc, char *argv[]) {
     }
     printf("Dir opened successfully!\n");
 
-    int x = 0;
-    while (strcmp(sd_file_list[x].src, "EndOfArray") != 0){
-        printf("source: %s\n", sd_file_list[x].src);
-        x++;
-    }
+    //int x = 0;
+    //while (strcmp(sd_file_list[x].src, "EndOfArray") != 0){
+    //    printf("source: %s\n", sd_file_list[x].src);
+    //    x++;
+    //}
 
     if(sd_NewFileNames(sd_file_list) != NULL){
         printf("New names created\n");
     }
 
-    sd_PrintDestinationFiles(sd_file_list);
+    //sd_PrintDestinationFiles(sd_file_list);
+    //GetAbsPaths(&sd_file_list[4]);
+    PrependAbsPath(sd_dir, sd_file_list);
+
+    sd_CopyFiles(sd_file_list);
 }
 
 void PrintStringsInArray(char myArray[MAXDIRCAPACITY][MAXFILENAME]){ 

@@ -26,7 +26,8 @@ struct srcDestFile* sd_NewFileNames(struct srcDestFile sd_list[]){
     // I previously marked the last element of the oldFilesList to be "EndOfArray" so that I can check for it 
     // and won't check an index past the last one here.
     while(strcmp(sd_list[x].src, "EndOfArray") != 0){
-        char *oldFile = sd_list[x].src;
+        char oldFileCpy[MAXFILENAME];
+        strncpy(oldFileCpy, sd_list[x].src, MAXFILENAME);
         //Don't check . or ..
         if((strcmp(sd_list[x].src, ".") == 0) || (strcmp(sd_list[x].src, "..")) == 0){
             x++;
@@ -34,13 +35,13 @@ struct srcDestFile* sd_NewFileNames(struct srcDestFile sd_list[]){
             continue;
         }
 
-        strtok(oldFile, ".");
+        strtok(oldFileCpy, ".");
         char *dotDelimiter = ".";
         char *fileNameExt = strtok(NULL, dotDelimiter);
 
         char *newFileName = (char*) malloc(MAXFILENAME);
 
-        errorFlag = regexec(&regObject, oldFile, nmatch, matchInfo, REG_NOTEOL);
+        errorFlag = regexec(&regObject, oldFileCpy, nmatch, matchInfo, REG_NOTEOL);
         if (!errorFlag) {
             strncpy(newFileName, &sd_list[x].src[matchInfo[0].rm_so], MAXFILENAME);
 
@@ -62,7 +63,7 @@ struct srcDestFile* sd_NewFileNames(struct srcDestFile sd_list[]){
             strncat(dot, fileNameExt, MAXFILENAME);
             strncat(newFileName, dot, MAXFILENAME);
         } else if (errorFlag==REG_NOMATCH) {
-            fprintf(stderr, "No matches found for file name: %s\n", oldFile);
+            fprintf(stderr, "No matches found for file name: %s\n", oldFileCpy);
         } else {
             fprintf(stderr, "unknown error\n");
         }
@@ -85,76 +86,6 @@ void sd_PrintDestinationFiles(struct srcDestFile sd_file_list[]){
     }
 
 }
-
-char* NewFileNames(char oldFilesList[MAXDIRCAPACITY][MAXFILENAME], char newFilesList[MAXDIRCAPACITY][MAXFILENAME]){
-    int x = 0;
-    regex_t regObject;
-    int errorFlag;
-    char* regex = "[a-g,A-G][#-b]?[-_]?[0-9]";
-    size_t nmatch = 1;
-    regmatch_t matchInfo[1];
-
-    //This function regcomp() defaults to using Basic Regular Expressions and I need Extended with this regex
-    errorFlag = regcomp(&regObject, regex, REG_EXTENDED);
-    if (errorFlag){
-        fprintf(stderr, "Problem compiling the regular expression!\n");
-        exit(1);
-    }
-
-    // I previously marked the last element of the oldFilesList to be "\0" so that I can check for it 
-    // and won't check an index past the last one here.
-    while(strcmp(oldFilesList[x], "EndOfArray") != 0){
-        char *oldFile = oldFilesList[x];
-        //Don't check . or ..
-        if((strcmp(oldFilesList[x], ".") == 0) || (strcmp(oldFilesList[x], "..")) == 0){
-            x++;
-            printf("skipping one\n");
-            continue;
-        }
-
-        strtok(oldFile, ".");
-        char *dotDelimiter = ".";
-        char *fileNameExt = strtok(NULL, dotDelimiter);
-
-        char *newFileName = (char*) malloc(MAXFILENAME);
-
-        errorFlag = regexec(&regObject, oldFile, nmatch, matchInfo, REG_NOTEOL);
-        if (!errorFlag) {
-            strncpy(newFileName, &oldFilesList[x][matchInfo[0].rm_so], MAXFILENAME);
-
-            int endOfString = matchInfo[0].rm_eo - matchInfo[0].rm_so;
-            newFileName[endOfString] = '\0';
-
-            //Use strtok to eliminate - and _ from the note names
-            char *delimiters = "-_";
-            char *tokenA = strtok(newFileName, delimiters);
-            char *tokenB;
-            if ((tokenB = strtok(NULL, delimiters)) != NULL){
-                //printf("Found another token\n");
-                memcpy(newFileName, tokenA, MAXFILENAME);
-                strncat(newFileName, tokenB, MAXFILENAME);
-            }
-
-            char dot[MAXFILENAME] = ".";
-            
-            strncat(dot, fileNameExt, MAXFILENAME);
-            strncat(newFileName, dot, MAXFILENAME);
-        } else if (errorFlag==REG_NOMATCH) {
-            fprintf(stderr, "No matches found for file name: %s\n", oldFile);
-        } else {
-            fprintf(stderr, "unknown error\n");
-        }
-        
-        char newPrefix[MAXFILENAME] = "AwesomeSample_";
-        strncat(newPrefix, newFileName, MAXFILENAME);
-        strncpy(newFilesList[x], newPrefix, MAXFILENAME);
-        x++;
-    }
-    x++;
-    strncpy(newFilesList[x], "EndOfArray", MAXFILENAME);
-    return *newFilesList;
-}
-
 
 void CopyFileTo(char *src, char *dest){
     FILE *source, *destination;
@@ -211,31 +142,6 @@ struct srcDestFile* sd_GetFilesFromDir(struct srcDestFile sd_dir, struct srcDest
     return sd_file_list;
 }
 
-char* GetFilesFromDir(char *dirToOpen, char filesList[MAXDIRCAPACITY][MAXFILENAME]){
-    char dirPath[MAXPATHLEN] = "./";
-    strcat(dirPath, dirToOpen);
-
-    DIR *directory = opendir(dirPath);
-    if (directory == NULL ){
-        fprintf(stderr, "Could not open directory!\n");
-        return NULL;
-    }
-
-    //This struct will be returned by readdir contains d_name (array of filenames as arrays of chars)
-    struct dirent *dp;
-
-    int fileListHead = 0;
-    while ((dp = readdir(directory)) != NULL )
-    {
-        strncpy(filesList[fileListHead], dp->d_name, MAXFILENAME);
-        fileListHead++;
-    }
-    strncpy(filesList[fileListHead], "EndOfArray", MAXFILENAME);
-    closedir(directory);
-
-    return *filesList;
-}
-
 struct srcDestFile* GetAbsPaths(struct srcDestFile *sd){
     char path[MAXPATHLEN];
     char tmpSrc[MAXPATHLEN] = "/"; 
@@ -255,6 +161,15 @@ struct srcDestFile* GetAbsPaths(struct srcDestFile *sd){
     return sd;
 }
 
+void sd_CopyFiles(struct srcDestFile *filesList){
+    // .. and . are getting snuck into filesList[x].src 
+    int x = 0;
+    while (strcmp(filesList[x].src, "EndOfArray")){
+        BuiltInCopy(filesList[x]);
+        x++;
+    }
+}
+
 void BuiltInCopy(struct srcDestFile sd){
     char command[MAXFILENAME+1];
     strncpy(command, "cp ", MAXFILENAME);
@@ -262,6 +177,29 @@ void BuiltInCopy(struct srcDestFile sd){
     strncat(command, sd.src, MAXFILENAME);
     strncat(command, " ", MAXFILENAME);
     strncat(command, sd.dest, MAXFILENAME);
+//    printf("Command is: %s\n", command);
+    system(command);
+}
+
+struct srcDestFile* PrependAbsPath(struct srcDestFile absPath, struct srcDestFile *filesList){
+    struct srcDestFile tmp_sd_file_list[MAXDIRCAPACITY];
+    int x = 0;
+    while (strcmp(filesList[x].src, "EndOfArray") != 0){
+        strncpy(tmp_sd_file_list[x].src, "'", MAXFILENAME);
+        strncat(tmp_sd_file_list[x].src, absPath.src, MAXFILENAME);
+        strncat(tmp_sd_file_list[x].src, filesList[x].src, MAXFILENAME);
+        strncat(tmp_sd_file_list[x].src, "'", MAXFILENAME);
+
+        strncpy(tmp_sd_file_list[x].dest, "'", MAXFILENAME);
+        strncat(tmp_sd_file_list[x].dest, absPath.dest, MAXFILENAME);
+        strncat(tmp_sd_file_list[x].dest, filesList[x].dest, MAXFILENAME);
+        strncat(tmp_sd_file_list[x].dest, "'", MAXFILENAME);
+
+        strncpy(filesList[x].src, tmp_sd_file_list[x].src, MAXFILENAME);
+        strncpy(filesList[x].dest, tmp_sd_file_list[x].dest, MAXFILENAME);
+        x++;
+    }
+    return filesList;
 }
 
 void PrintSrcDestDir(struct srcDestDir *sd){
