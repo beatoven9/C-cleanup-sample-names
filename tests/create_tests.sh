@@ -61,7 +61,7 @@ function Create_Test_Set(){
                 do
                     if [[ $altered_note = $note ]]
                     then
-                        touch ./test_input/${PREFIX}_${note}-b${octave}.wav
+                        touch ./test_input/${PREFIX}_${note}b-${octave}.wav
                     fi
                 done
             fi

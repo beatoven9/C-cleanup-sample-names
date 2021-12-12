@@ -12,7 +12,7 @@ struct srcDestFile* sd_NewFileNames(struct srcDestFile sd_list[]){
     int x = 0;
     regex_t regObject;
     int errorFlag;
-    char* regex = "[a-g,A-G][#-b]?[-_]?[0-9]";
+    char* regex = "[a-g,A-G][#b-]?[-_]?[0-9]";
     size_t nmatch = 1;
     regmatch_t matchInfo[1];
 
@@ -28,12 +28,6 @@ struct srcDestFile* sd_NewFileNames(struct srcDestFile sd_list[]){
     while(strcmp(sd_list[x].src, "EndOfArray") != 0){
         char oldFileCpy[MAXFILENAME];
         strncpy(oldFileCpy, sd_list[x].src, MAXFILENAME);
-        //Don't check . or ..
-        if((strcmp(sd_list[x].src, ".") == 0) || (strcmp(sd_list[x].src, "..")) == 0){
-            x++;
-            printf("skipping one\n");
-            continue;
-        }
 
         strtok(oldFileCpy, ".");
         char *dotDelimiter = ".";
@@ -116,11 +110,6 @@ void CopyFileTo(char *src, char *dest){
 }
 
 struct srcDestFile* sd_GetFilesFromDir(struct srcDestFile sd_dir, struct srcDestFile sd_file_list[MAXFILENAME]){
-    //this is a bug if abs path is already obtained
-    //char dirPath[MAXPATHLEN] = "./";
-    //strcat(dirPath, sd_dir.src);
-    //**************************
-
     DIR *directory = opendir(sd_dir.src);
     if (directory == NULL ){
         fprintf(stderr, "Could not open directory!\n");
@@ -133,6 +122,10 @@ struct srcDestFile* sd_GetFilesFromDir(struct srcDestFile sd_dir, struct srcDest
     int fileListHead = 0;
     while ((dp = readdir(directory)) != NULL )
     {
+        if ((strcmp(dp->d_name, ".") == 0) || (strcmp(dp->d_name, "..") == 0)){
+            continue;
+        }
+        
         strncpy(sd_file_list[fileListHead].src, dp->d_name, MAXFILENAME);
         fileListHead++;
     }
@@ -185,6 +178,7 @@ struct srcDestFile* PrependAbsPath(struct srcDestFile absPath, struct srcDestFil
     struct srcDestFile tmp_sd_file_list[MAXDIRCAPACITY];
     int x = 0;
     while (strcmp(filesList[x].src, "EndOfArray") != 0){
+
         strncpy(tmp_sd_file_list[x].src, "'", MAXFILENAME);
         strncat(tmp_sd_file_list[x].src, absPath.src, MAXFILENAME);
         strncat(tmp_sd_file_list[x].src, filesList[x].src, MAXFILENAME);

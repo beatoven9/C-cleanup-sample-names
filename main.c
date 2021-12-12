@@ -1,6 +1,7 @@
 //to do:
-//      rewrite most of this so that it is using the srcDestFile struct
-//          CopyFilesTo should take sd_list and copy files over.
+//      handle commandline arguments more appropriately
+//      add / to end of dir arguments if none exist
+//      options
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -44,8 +45,6 @@ int main(int argc, char *argv[]) {
         printf("New names created\n");
     }
 
-    //sd_PrintDestinationFiles(sd_file_list);
-    //GetAbsPaths(&sd_file_list[4]);
     PrependAbsPath(sd_dir, sd_file_list);
 
     sd_CopyFiles(sd_file_list);
