@@ -5,8 +5,6 @@
 #include "SrcDest.h"
 #include <getopt.h>
 
-void PrintStringsInArray(char myArray[MAXDIRCAPACITY][MAXFILENAME]);
-
 static struct option const long_opts[] = 
 {
     {"input-dir", required_argument, NULL, 'i'},
@@ -60,13 +58,6 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Issue opening up directory!\n");
         return 1;
     }
-    printf("Dir opened successfully!\n");
-
-    //int x = 0;
-    //while (strcmp(sd_file_list[x].src, "EndOfArray") != 0){
-    //    printf("source: %s\n", sd_file_list[x].src);
-    //    x++;
-    //}
 
     if(sd_NewFileNames(sd_file_list) != NULL){
         printf("New names created\n");
@@ -75,13 +66,5 @@ int main(int argc, char *argv[])
     PrependAbsPath(sd_dir, sd_file_list);
 
     sd_CopyFiles(sd_file_list);
-}
-
-void PrintStringsInArray(char myArray[MAXDIRCAPACITY][MAXFILENAME]){ 
-    int x = 0;
-    while(strcmp(myArray[x], "EndOfArray") != 0){
-        printf("%s\n", myArray[x]);
-        x++;
-    }
 }
 
