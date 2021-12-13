@@ -1,9 +1,10 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <getopt.h>
 #include <string.h>
+
 #include "Constants.h"
 #include "SrcDest.h"
-#include <getopt.h>
 
 static struct option const long_opts[] = 
 {
@@ -28,6 +29,8 @@ int main(int argc, char *argv[])
     int c;
     char input_dir[MAXPATHLEN];
     char output_dir[MAXPATHLEN];
+    struct srcDestFile sd_dir;
+
 
     while ((c = getopt_long(argc, argv, "i:o:", long_opts, NULL)) != -1)
     {
@@ -35,21 +38,24 @@ int main(int argc, char *argv[])
         {
             case 'i':
                 strncpy(input_dir, optarg, MAXPATHLEN);
+                realpath(input_dir, sd_dir.src);
+                strncat(sd_dir.src, "/", MAXPATHLEN-1);
                 break;
             case 'o':
                 strncpy(output_dir, optarg, MAXPATHLEN);
+                realpath(output_dir, sd_dir.dest);
+                strncat(sd_dir.dest, "/", MAXPATHLEN-1);
                 break;
             default:
                 usage(EXIT_FAILURE);
         }
     }
 
-    struct srcDestFile sd_dir;
 
-    strncpy(sd_dir.src, input_dir, MAXPATHLEN);
-    strncpy(sd_dir.dest, output_dir, MAXPATHLEN);
+    //strncpy(sd_dir.src, input_dir, MAXPATHLEN);
+    //strncpy(sd_dir.dest, output_dir, MAXPATHLEN);
 
-    GetAbsPaths(&sd_dir);
+    //GetAbsPaths(&sd_dir);
     PrintSrcDestFile(&sd_dir);
 
     struct srcDestFile sd_file_list[MAXDIRCAPACITY];
