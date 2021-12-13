@@ -1,6 +1,5 @@
-#CleanUpSamplesNames
-##A program designed to cleanup the filenames of sample libraries.
-    I already have a python program that accomplishes this. This is mostly a way for me to practice C.  
+# CleanUpSamplesNames
+## A program designed to cleanup the filenames of sample libraries. 
   
 Usage: CleanUpSamplesNames --input-dir=myInputDir --output-dir=myOutputDir --prefix=myNewPrefix  
   
