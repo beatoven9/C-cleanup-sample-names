@@ -13,9 +13,8 @@ struct srcDestFile {
     char dest[MAXPATHLEN];
 };
 
-struct srcDestFile* sd_NewFileNames(struct srcDestFile sd_list[]);
+struct srcDestFile* sd_NewFileNames(struct srcDestFile sd_list[], char *newFilePrefix);
 struct srcDestFile* sd_GetFilesFromDir(struct srcDestFile sd_dir, struct srcDestFile sd_file_list[MAXFILENAME]);
-struct srcDestFile* GetAbsPaths(struct srcDestFile *sd);
 struct srcDestFile* PrependAbsPath(struct srcDestFile absPath, struct srcDestFile *filesList);
 void sd_PrintDestinationFiles(struct srcDestFile sd_file_list[]);
 void sd_CopyFiles(struct srcDestFile *filesList);

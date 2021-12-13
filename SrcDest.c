@@ -8,13 +8,16 @@
 #include "Constants.h"
 #include "SrcDest.h"
 
-struct srcDestFile* sd_NewFileNames(struct srcDestFile sd_list[]){
+struct srcDestFile* sd_NewFileNames(struct srcDestFile sd_list[], char *newFilePrefix){
     int x = 0;
+    char newPrefix[MAXFILENAME];
     regex_t regObject;
     int errorFlag;
     char* regex = "[a-g,A-G][#b-]?[-_]?[0-9]";
     size_t nmatch = 1;
     regmatch_t matchInfo[1];
+
+    strncpy(newPrefix, newFilePrefix, MAXFILENAME);
 
     //This function regcomp() defaults to using Basic Regular Expressions and I need Extended with this regex
     errorFlag = regcomp(&regObject, regex, REG_EXTENDED);
@@ -29,8 +32,9 @@ struct srcDestFile* sd_NewFileNames(struct srcDestFile sd_list[]){
         char oldFileCpy[MAXFILENAME];
         strncpy(oldFileCpy, sd_list[x].src, MAXFILENAME);
 
-        strtok(oldFileCpy, ".");
         char *dotDelimiter = ".";
+
+        strtok(oldFileCpy, dotDelimiter);
         char *fileNameExt = strtok(NULL, dotDelimiter);
 
         char *newFileName = (char*) malloc(MAXFILENAME);
@@ -62,9 +66,10 @@ struct srcDestFile* sd_NewFileNames(struct srcDestFile sd_list[]){
             fprintf(stderr, "unknown error\n");
         }
         
-        char newPrefix[MAXFILENAME] = "AwesomeSample_";
-        strncat(newPrefix, newFileName, MAXFILENAME);
-        strncpy(sd_list[x].dest, newPrefix, MAXFILENAME);
+        char newName[MAXFILENAME];
+        strncpy(newName, newPrefix, MAXFILENAME);
+        strncat(newName, newFileName, MAXFILENAME);
+        strncpy(sd_list[x].dest, newName, MAXFILENAME);
         x++;
     }
     x++;
@@ -135,27 +140,7 @@ struct srcDestFile* sd_GetFilesFromDir(struct srcDestFile sd_dir, struct srcDest
     return sd_file_list;
 }
 
-struct srcDestFile* GetAbsPaths(struct srcDestFile *sd){
-    char path[MAXPATHLEN];
-    char tmpSrc[MAXPATHLEN] = "/"; 
-    char tmpDest[MAXPATHLEN] = "/";
-
-    strncat(tmpSrc, sd->src, MAXPATHLEN);
-    strncat(tmpDest, sd->dest, MAXPATHLEN);
-
-    getcwd(path, MAXPATHLEN);
-
-    memcpy(sd->src, path, MAXPATHLEN);
-    memcpy(sd->dest, path, MAXPATHLEN);
-
-    strncat(sd->src, tmpSrc, MAXPATHLEN);
-    strncat(sd->dest, tmpDest, MAXPATHLEN);
-    
-    return sd;
-}
-
 void sd_CopyFiles(struct srcDestFile *filesList){
-    // .. and . are getting snuck into filesList[x].src 
     int x = 0;
     while (strcmp(filesList[x].src, "EndOfArray")){
         BuiltInCopy(filesList[x]);
@@ -170,7 +155,7 @@ void BuiltInCopy(struct srcDestFile sd){
     strncat(command, sd.src, MAXFILENAME);
     strncat(command, " ", MAXFILENAME);
     strncat(command, sd.dest, MAXFILENAME);
-//    printf("Command is: %s\n", command);
+
     system(command);
 }
 
