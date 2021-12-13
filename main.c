@@ -1,31 +1,58 @@
-//to do:
-//      handle commandline arguments more appropriately
-//      add / to end of dir arguments if none exist
-//      options
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include "Constants.h"
 #include "SrcDest.h"
+#include <getopt.h>
 
 void PrintStringsInArray(char myArray[MAXDIRCAPACITY][MAXFILENAME]);
 
-int main(int argc, char *argv[]) {
-    struct srcDestFile sd_dir;
-    if ( argc == 3){
-        strncpy(sd_dir.src, argv[1], MAXPATHLEN);
-        strncpy(sd_dir.dest, argv[2], MAXPATHLEN);
+static struct option const long_opts[] = 
+{
+    {"input-dir", required_argument, NULL, 'i'},
+    {"output-dir", required_argument, NULL, 'o'},
+    {NULL, 0, NULL, 0 }
 
-        GetAbsPaths(&sd_dir);
-        PrintSrcDestFile(&sd_dir);
+};
 
-    } else if( argc > 3 ){
-        fprintf(stderr, "Too many arguments supplied!\n");
-    } else {
-        fprintf(stderr, "Two Arguments Expected!\n      ./a.out sourceFolder targetFolder\n");
-        exit(1);
+char programName[] = "cleanUpFiles";
+
+void usage (int status)
+{
+    printf("\
+    Usage: %s --input-dir=myInputDir --output-dir=myOutputDir\n", programName);
+
+    exit(status);
+}
+
+int main(int argc, char *argv[]) 
+{
+    int c;
+    char input_dir[MAXPATHLEN];
+    char output_dir[MAXPATHLEN];
+
+    while ((c = getopt_long(argc, argv, "i:o:", long_opts, NULL)) != -1)
+    {
+        switch (c)
+        {
+            case 'i':
+                strncpy(input_dir, optarg, MAXPATHLEN);
+                break;
+            case 'o':
+                strncpy(output_dir, optarg, MAXPATHLEN);
+                break;
+            default:
+                usage(EXIT_FAILURE);
+        }
     }
+
+    struct srcDestFile sd_dir;
+
+    strncpy(sd_dir.src, input_dir, MAXPATHLEN);
+    strncpy(sd_dir.dest, output_dir, MAXPATHLEN);
+
+    GetAbsPaths(&sd_dir);
+    PrintSrcDestFile(&sd_dir);
 
     struct srcDestFile sd_file_list[MAXDIRCAPACITY];
 
