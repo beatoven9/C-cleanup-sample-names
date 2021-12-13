@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
     struct srcDestFile sd_dir;
 
 
-    while ((c = getopt_long(argc, argv, "i:o:", long_opts, NULL)) != -1)
+    while ((c = getopt_long(argc, argv, "i:o:p:", long_opts, NULL)) != -1)
     {
         switch (c)
         {
